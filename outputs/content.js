@@ -20,6 +20,14 @@
     const dry = context.createGain();
     const splitter = context.createChannelSplitter(2);
     const merger = context.createChannelMerger(2);
+    const sideDiff = context.createGain();
+    const sideInvert = context.createGain();
+    const sideTone = context.createBiquadFilter();
+    const sideAir = context.createBiquadFilter();
+    const sideBus = context.createGain();
+    const sideLeft = context.createGain();
+    const sideRight = context.createGain();
+    const sideMerger = context.createChannelMerger(2);
     const leftDirect = context.createGain();
     const rightDirect = context.createGain();
     const leftCross = context.createGain();
@@ -59,6 +67,11 @@
     earlyGain3.gain.value = 0.07;
     roomTone.type = "lowpass"; roomTone.frequency.value = 5200;
     roomTone2.type = "highpass"; roomTone2.frequency.value = 120;
+    sideInvert.gain.value = -0.5;
+    sideTone.type = "peaking"; sideTone.frequency.value = 220; sideTone.Q.value = 0.7;
+    sideAir.type = "highshelf"; sideAir.frequency.value = 6800;
+    sideLeft.gain.value = 1;
+    sideRight.gain.value = -1;
 
     // A compact synthetic room: early reflection + filtered feedback tail.
     source.connect(input);
@@ -70,6 +83,14 @@
     splitter.connect(rightDirect, 1).connect(merger, 0, 1);
     splitter.connect(leftCross, 1).connect(merger, 0, 0);
     splitter.connect(rightCross, 0).connect(merger, 0, 1);
+    // Mid/Side parallel path: keep the center vocal stable while giving
+    // stereo instruments their own PA weight and room contribution.
+    splitter.connect(sideDiff, 0);
+    splitter.connect(sideInvert, 1).connect(sideDiff);
+    sideDiff.connect(sideTone).connect(sideAir).connect(sideBus);
+    sideBus.connect(sideLeft).connect(sideMerger, 0, 0);
+    sideBus.connect(sideRight).connect(sideMerger, 0, 1);
+    sideMerger.connect(output);
     merger.connect(dry).connect(output);
     compressor.connect(wetDelay).connect(roomTone2).connect(roomTone).connect(wet).connect(output);
     wetDelay.connect(feedback).connect(wetDelay);
@@ -78,7 +99,7 @@
     compressor.connect(earlyDelay3).connect(earlyGain3).connect(roomTone2);
     output.connect(analyser).connect(context.destination);
 
-    state = { video, context, input, bypass, dry, wet, output, eq, mudCut, presence, air, compressor, wetDelay, feedback, earlyGain1, earlyGain2, earlyGain3, roomTone, analyser, leftDirect, rightDirect, leftCross, rightCross };
+    state = { video, context, input, bypass, dry, wet, output, eq, mudCut, presence, air, compressor, wetDelay, feedback, earlyGain1, earlyGain2, earlyGain3, roomTone, sideTone, sideAir, sideBus, analyser, leftDirect, rightDirect, leftCross, rightCross };
     applySettings();
 
     const resume = () => context.resume().catch(() => {});
@@ -88,7 +109,7 @@
 
   function applySettings() {
     if (!state) return;
-    const { context: c, input, bypass, dry, wet, eq, mudCut, presence, air, compressor, wetDelay, feedback, earlyGain1, earlyGain2, earlyGain3, roomTone, leftDirect, rightDirect, leftCross, rightCross } = state;
+    const { context: c, input, bypass, dry, wet, eq, mudCut, presence, air, compressor, wetDelay, feedback, earlyGain1, earlyGain2, earlyGain3, roomTone, sideTone, sideAir, sideBus, leftDirect, rightDirect, leftCross, rightCross } = state;
     const t = c.currentTime;
     const live = settings.enabled;
     input.gain.setTargetAtTime(live ? 1 : 0, t, 0.02);
@@ -106,6 +127,9 @@
     earlyGain3.gain.setTargetAtTime(live ? profile.room / 100 * 0.08 : 0, t, 0.04);
     roomTone.frequency.setTargetAtTime(8200 - profile.warmth * 35, t, 0.04);
     compressor.threshold.setTargetAtTime(-16 - profile.warmth / 24, t, 0.04);
+    sideTone.gain.setTargetAtTime(live ? 1.2 + profile.warmth / 80 : 0, t, 0.04);
+    sideAir.gain.setTargetAtTime(live ? 0.6 + profile.width / 120 : 0, t, 0.04);
+    sideBus.gain.setTargetAtTime(live ? profile.width / 100 * 0.32 : 0, t, 0.04);
     const side = live ? profile.width / 100 * 0.42 : 0;
     leftDirect.gain.setTargetAtTime(1 + side, t, 0.04);
     rightDirect.gain.setTargetAtTime(1 + side, t, 0.04);
