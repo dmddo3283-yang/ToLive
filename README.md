@@ -4,6 +4,10 @@
 
 ## 설치
 
+<p>
+  <a href="./outputs/live-mood-for-youtube.zip" download>⬇️ ZIP 파일 다운로드</a>
+</p>
+
 1. Chrome에서 `chrome://extensions`를 엽니다.
 2. 개발자 모드를 켭니다.
 3. **압축해제된 확장 프로그램을 로드**하고 이 폴더를 선택합니다.
