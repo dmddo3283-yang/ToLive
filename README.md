@@ -5,7 +5,7 @@
 ## 설치
 
 <p>
-  <a href="./outputs/live-mood-for-youtube.zip" download>⬇️ ZIP 파일 다운로드</a>
+  <a href="https://raw.githubusercontent.com/dmddo3283-yang/ToLive/main/outputs/live-mood-for-youtube.zip" download>⬇️ ZIP 파일 다운로드</a>
 </p>
 
 1. Chrome에서 `chrome://extensions`를 엽니다.
