@@ -10,6 +10,14 @@
     "toggle-live": {
       "suggested_key": { "default": "Ctrl+Shift+L", "mac": "Command+Shift+L" },
       "description": "Live Mood 켜기/끄기"
+    },
+    "echo-up": {
+      "suggested_key": { "default": "Ctrl+Up", "mac": "Command+Up" },
+      "description": "보컬 에코 높이기"
+    },
+    "echo-down": {
+      "suggested_key": { "default": "Ctrl+Down", "mac": "Command+Down" },
+      "description": "보컬 에코 낮추기"
     }
   },
   "content_scripts": [

@@ -12,4 +12,5 @@
 2. 개발자 모드를 켭니다.
 3. **압축해제된 확장 프로그램을 로드**하고 이 폴더를 선택합니다.
 4. 유튜브를 새로고침한 뒤 `Ctrl+Shift+L`(macOS: `Command+Shift+L`)을 눌러 라이브 모드를 켜고 끕니다.
-5. 단축키가 다른 확장 프로그램과 겹치면 `chrome://extensions/shortcuts`에서 변경합니다.
+5. `Ctrl+↑ / Ctrl+↓`(macOS: `Command+↑ / Command+↓`)로 에코를 높이거나 낮춥니다. 에코 기본값은 5입니다.
+6. 단축키가 다른 확장 프로그램과 겹치면 `chrome://extensions/shortcuts`에서 변경합니다.

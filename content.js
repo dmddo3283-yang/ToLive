@@ -2,7 +2,7 @@
   // Three-way voicing inspired by the requested references:
   // large Japanese arena vocal clarity, dramatic Ado-style front-to-back depth,
   // and G-DRAGON-style PA weight/saturation. Kept subtle so playlists remain listenable.
-  const defaults = { enabled: true };
+  const defaults = { enabled: true, echo: 5 };
   const profile = { room: 58, warmth: 46, width: 32 };
   let settings = { ...defaults };
   let state = null;
@@ -140,19 +140,21 @@
     const { context: c, input, bypass, dry, wet, processedGain, eq, bassEQ, rhythmEQ, mudCut, presence, air, compressor, wetDelay, feedback, earlyGain1, earlyGain2, earlyGain3, roomTone, sideTone, sessionBody, sessionAttack, sideAir, sideBus, sessionDelay, sessionFeedback, sessionRoomGain, leftDirect, rightDirect, leftCross, rightCross } = state;
     const t = c.currentTime;
     const live = settings.enabled;
+    const echo = clamp(settings.echo, 0, 10);
+    const echoAmount = echo / 10;
     input.gain.setTargetAtTime(live ? 1 : 0, t, 0.02);
     bypass.gain.setTargetAtTime(live ? 0 : 1, t, 0.02);
     dry.gain.setTargetAtTime(live ? 1 - profile.room / 240 : 1, t, 0.04);
     processedGain.gain.setTargetAtTime(live ? 0.9 : 1, t, 0.04);
-    wet.gain.setTargetAtTime(live ? profile.room / 100 * 0.78 : 0, t, 0.04);
+    wet.gain.setTargetAtTime(live ? profile.room / 100 * (0.55 + echoAmount * 0.46) : 0, t, 0.04);
     eq.gain.setTargetAtTime(live ? profile.warmth / 38 * 3.1 : 0, t, 0.04);
     bassEQ.gain.setTargetAtTime(live ? 3.0 + profile.warmth / 60 : 0, t, 0.04);
     rhythmEQ.gain.setTargetAtTime(live ? 1.8 + profile.warmth / 100 : 0, t, 0.04);
     mudCut.gain.setTargetAtTime(live ? -0.8 - profile.warmth / 80 : 0, t, 0.04);
     presence.gain.setTargetAtTime(live ? 0.6 - profile.warmth / 80 : 0, t, 0.04);
     air.gain.setTargetAtTime(live ? 0.8 - profile.warmth / 100 : 0, t, 0.04);
-    wetDelay.delayTime.setTargetAtTime(0.065 + profile.room / 100 * 0.06, t, 0.04);
-    feedback.gain.setTargetAtTime(profile.room / 100 * 0.42, t, 0.04);
+    wetDelay.delayTime.setTargetAtTime(0.06 + profile.room / 100 * 0.055 + echoAmount * 0.012, t, 0.04);
+    feedback.gain.setTargetAtTime(profile.room / 100 * (0.22 + echoAmount * 0.4), t, 0.04);
     earlyGain1.gain.setTargetAtTime(live ? profile.room / 100 * 0.18 : 0, t, 0.04);
     earlyGain2.gain.setTargetAtTime(live ? profile.room / 100 * 0.12 : 0, t, 0.04);
     earlyGain3.gain.setTargetAtTime(live ? profile.room / 100 * 0.08 : 0, t, 0.04);
