@@ -44,6 +44,7 @@
     const output = context.createGain();
     const eq = context.createBiquadFilter();
     const bassEQ = context.createBiquadFilter();
+    const rhythmEQ = context.createBiquadFilter();
     const presence = context.createBiquadFilter();
     const compressor = context.createDynamicsCompressor();
     const wetDelay = context.createDelay(0.2);
@@ -62,6 +63,7 @@
 
     eq.type = "lowshelf"; eq.frequency.value = 180;
     bassEQ.type = "peaking"; bassEQ.frequency.value = 92; bassEQ.Q.value = 0.8;
+    rhythmEQ.type = "peaking"; rhythmEQ.frequency.value = 145; rhythmEQ.Q.value = 0.9;
     mudCut.type = "peaking"; mudCut.frequency.value = 320; mudCut.Q.value = 0.75;
     presence.type = "peaking"; presence.frequency.value = 2600; presence.Q.value = 0.7;
     air.type = "highshelf"; air.frequency.value = 9000;
@@ -92,7 +94,7 @@
     // A compact synthetic room: early reflection + filtered feedback tail.
     source.connect(input);
     source.connect(bypass).connect(output);
-    input.connect(eq).connect(bassEQ).connect(mudCut).connect(presence).connect(air).connect(compressor);
+    input.connect(eq).connect(bassEQ).connect(rhythmEQ).connect(mudCut).connect(presence).connect(air).connect(compressor);
     // Width matrix: preserve the center while exaggerating side information.
     compressor.connect(splitter);
     splitter.connect(leftDirect, 0).connect(merger, 0, 0);
@@ -121,7 +123,7 @@
     sessionDelay.connect(sessionFeedback).connect(sessionDelay);
     output.connect(analyser).connect(context.destination);
 
-    state = { video, context, input, bypass, dry, wet, output, processedGain, eq, bassEQ, mudCut, presence, air, compressor, wetDelay, feedback, earlyGain1, earlyGain2, earlyGain3, roomTone, sideTone, sideAir, sideBus, sessionDelay, sessionFeedback, sessionRoomGain, analyser, leftDirect, rightDirect, leftCross, rightCross };
+    state = { video, context, input, bypass, dry, wet, output, processedGain, eq, bassEQ, rhythmEQ, mudCut, presence, air, compressor, wetDelay, feedback, earlyGain1, earlyGain2, earlyGain3, roomTone, sideTone, sideAir, sideBus, sessionDelay, sessionFeedback, sessionRoomGain, analyser, leftDirect, rightDirect, leftCross, rightCross };
     applySettings();
 
     const resume = () => context.resume().catch(() => {});
@@ -131,21 +133,22 @@
 
   function applySettings() {
     if (!state) return;
-    const { context: c, input, bypass, dry, wet, processedGain, eq, bassEQ, mudCut, presence, air, compressor, wetDelay, feedback, earlyGain1, earlyGain2, earlyGain3, roomTone, sideTone, sideAir, sideBus, sessionDelay, sessionFeedback, sessionRoomGain, leftDirect, rightDirect, leftCross, rightCross } = state;
+    const { context: c, input, bypass, dry, wet, processedGain, eq, bassEQ, rhythmEQ, mudCut, presence, air, compressor, wetDelay, feedback, earlyGain1, earlyGain2, earlyGain3, roomTone, sideTone, sideAir, sideBus, sessionDelay, sessionFeedback, sessionRoomGain, leftDirect, rightDirect, leftCross, rightCross } = state;
     const t = c.currentTime;
     const live = settings.enabled;
     input.gain.setTargetAtTime(live ? 1 : 0, t, 0.02);
     bypass.gain.setTargetAtTime(live ? 0 : 1, t, 0.02);
     dry.gain.setTargetAtTime(live ? 1 - profile.room / 240 : 1, t, 0.04);
     processedGain.gain.setTargetAtTime(live ? 0.9 : 1, t, 0.04);
-    wet.gain.setTargetAtTime(live ? profile.room / 100 * 0.62 : 0, t, 0.04);
-    eq.gain.setTargetAtTime(live ? profile.warmth / 38 * 2.6 : 0, t, 0.04);
-    bassEQ.gain.setTargetAtTime(live ? 1.8 + profile.warmth / 70 : 0, t, 0.04);
+    wet.gain.setTargetAtTime(live ? profile.room / 100 * 0.78 : 0, t, 0.04);
+    eq.gain.setTargetAtTime(live ? profile.warmth / 38 * 3.1 : 0, t, 0.04);
+    bassEQ.gain.setTargetAtTime(live ? 3.0 + profile.warmth / 60 : 0, t, 0.04);
+    rhythmEQ.gain.setTargetAtTime(live ? 1.8 + profile.warmth / 100 : 0, t, 0.04);
     mudCut.gain.setTargetAtTime(live ? -0.8 - profile.warmth / 80 : 0, t, 0.04);
-    presence.gain.setTargetAtTime(live ? -profile.warmth / 38 * 1.2 : 0, t, 0.04);
+    presence.gain.setTargetAtTime(live ? 0.6 - profile.warmth / 80 : 0, t, 0.04);
     air.gain.setTargetAtTime(live ? 0.8 - profile.warmth / 100 : 0, t, 0.04);
-    wetDelay.delayTime.setTargetAtTime(0.055 + profile.room / 100 * 0.045, t, 0.04);
-    feedback.gain.setTargetAtTime(profile.room / 100 * 0.34, t, 0.04);
+    wetDelay.delayTime.setTargetAtTime(0.065 + profile.room / 100 * 0.06, t, 0.04);
+    feedback.gain.setTargetAtTime(profile.room / 100 * 0.42, t, 0.04);
     earlyGain1.gain.setTargetAtTime(live ? profile.room / 100 * 0.18 : 0, t, 0.04);
     earlyGain2.gain.setTargetAtTime(live ? profile.room / 100 * 0.12 : 0, t, 0.04);
     earlyGain3.gain.setTargetAtTime(live ? profile.room / 100 * 0.08 : 0, t, 0.04);
