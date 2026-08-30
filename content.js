@@ -28,6 +28,14 @@
     const sideLeft = context.createGain();
     const sideRight = context.createGain();
     const sideMerger = context.createChannelMerger(2);
+    const processedGain = context.createGain();
+    const sessionDelay = context.createDelay(0.2);
+    const sessionFeedback = context.createGain();
+    const sessionRoomTone = context.createBiquadFilter();
+    const sessionRoomTone2 = context.createBiquadFilter();
+    const sessionRoomGain = context.createGain();
+    const sessionRoomLeft = context.createGain();
+    const sessionRoomRight = context.createGain();
     const leftDirect = context.createGain();
     const rightDirect = context.createGain();
     const leftCross = context.createGain();
@@ -72,6 +80,12 @@
     sideAir.type = "highshelf"; sideAir.frequency.value = 6800;
     sideLeft.gain.value = 1;
     sideRight.gain.value = -1;
+    sessionDelay.delayTime.value = 0.085;
+    sessionFeedback.gain.value = 0.18;
+    sessionRoomTone.type = "lowpass"; sessionRoomTone.frequency.value = 5200;
+    sessionRoomTone2.type = "highpass"; sessionRoomTone2.frequency.value = 150;
+    sessionRoomLeft.gain.value = 1;
+    sessionRoomRight.gain.value = -1;
 
     // A compact synthetic room: early reflection + filtered feedback tail.
     source.connect(input);
@@ -90,16 +104,22 @@
     sideDiff.connect(sideTone).connect(sideAir).connect(sideBus);
     sideBus.connect(sideLeft).connect(sideMerger, 0, 0);
     sideBus.connect(sideRight).connect(sideMerger, 0, 1);
-    sideMerger.connect(output);
-    merger.connect(dry).connect(output);
-    compressor.connect(wetDelay).connect(roomTone2).connect(roomTone).connect(wet).connect(output);
+    sideMerger.connect(processedGain);
+    merger.connect(dry).connect(processedGain);
+    processedGain.connect(output);
+    compressor.connect(wetDelay).connect(roomTone2).connect(roomTone).connect(wet).connect(processedGain);
     wetDelay.connect(feedback).connect(wetDelay);
     compressor.connect(earlyDelay1).connect(earlyGain1).connect(roomTone2);
     compressor.connect(earlyDelay2).connect(earlyGain2).connect(roomTone2);
     compressor.connect(earlyDelay3).connect(earlyGain3).connect(roomTone2);
+    // Give the stereo instrument field a separate, slightly longer room tail.
+    sideAir.connect(sessionDelay).connect(sessionRoomTone2).connect(sessionRoomTone).connect(sessionRoomGain);
+    sessionRoomGain.connect(sessionRoomLeft).connect(sideMerger, 0, 0);
+    sessionRoomGain.connect(sessionRoomRight).connect(sideMerger, 0, 1);
+    sessionDelay.connect(sessionFeedback).connect(sessionDelay);
     output.connect(analyser).connect(context.destination);
 
-    state = { video, context, input, bypass, dry, wet, output, eq, mudCut, presence, air, compressor, wetDelay, feedback, earlyGain1, earlyGain2, earlyGain3, roomTone, sideTone, sideAir, sideBus, analyser, leftDirect, rightDirect, leftCross, rightCross };
+    state = { video, context, input, bypass, dry, wet, output, processedGain, eq, mudCut, presence, air, compressor, wetDelay, feedback, earlyGain1, earlyGain2, earlyGain3, roomTone, sideTone, sideAir, sideBus, sessionDelay, sessionFeedback, sessionRoomGain, analyser, leftDirect, rightDirect, leftCross, rightCross };
     applySettings();
 
     const resume = () => context.resume().catch(() => {});
@@ -109,19 +129,20 @@
 
   function applySettings() {
     if (!state) return;
-    const { context: c, input, bypass, dry, wet, eq, mudCut, presence, air, compressor, wetDelay, feedback, earlyGain1, earlyGain2, earlyGain3, roomTone, sideTone, sideAir, sideBus, leftDirect, rightDirect, leftCross, rightCross } = state;
+    const { context: c, input, bypass, dry, wet, processedGain, eq, mudCut, presence, air, compressor, wetDelay, feedback, earlyGain1, earlyGain2, earlyGain3, roomTone, sideTone, sideAir, sideBus, sessionDelay, sessionFeedback, sessionRoomGain, leftDirect, rightDirect, leftCross, rightCross } = state;
     const t = c.currentTime;
     const live = settings.enabled;
     input.gain.setTargetAtTime(live ? 1 : 0, t, 0.02);
     bypass.gain.setTargetAtTime(live ? 0 : 1, t, 0.02);
     dry.gain.setTargetAtTime(live ? 1 - profile.room / 240 : 1, t, 0.04);
-    wet.gain.setTargetAtTime(live ? profile.room / 100 * 0.72 : 0, t, 0.04);
+    processedGain.gain.setTargetAtTime(live ? 0.9 : 1, t, 0.04);
+    wet.gain.setTargetAtTime(live ? profile.room / 100 * 0.62 : 0, t, 0.04);
     eq.gain.setTargetAtTime(live ? profile.warmth / 38 * 2.6 : 0, t, 0.04);
     mudCut.gain.setTargetAtTime(live ? -0.8 - profile.warmth / 80 : 0, t, 0.04);
     presence.gain.setTargetAtTime(live ? -profile.warmth / 38 * 1.2 : 0, t, 0.04);
     air.gain.setTargetAtTime(live ? 0.8 - profile.warmth / 100 : 0, t, 0.04);
     wetDelay.delayTime.setTargetAtTime(0.055 + profile.room / 100 * 0.045, t, 0.04);
-    feedback.gain.setTargetAtTime(profile.room / 100 * 0.38, t, 0.04);
+    feedback.gain.setTargetAtTime(profile.room / 100 * 0.34, t, 0.04);
     earlyGain1.gain.setTargetAtTime(live ? profile.room / 100 * 0.18 : 0, t, 0.04);
     earlyGain2.gain.setTargetAtTime(live ? profile.room / 100 * 0.12 : 0, t, 0.04);
     earlyGain3.gain.setTargetAtTime(live ? profile.room / 100 * 0.08 : 0, t, 0.04);
@@ -130,6 +151,9 @@
     sideTone.gain.setTargetAtTime(live ? 1.2 + profile.warmth / 80 : 0, t, 0.04);
     sideAir.gain.setTargetAtTime(live ? 0.6 + profile.width / 120 : 0, t, 0.04);
     sideBus.gain.setTargetAtTime(live ? profile.width / 100 * 0.32 : 0, t, 0.04);
+    sessionDelay.delayTime.setTargetAtTime(0.075 + profile.room / 100 * 0.035, t, 0.04);
+    sessionFeedback.gain.setTargetAtTime(live ? profile.room / 100 * 0.24 : 0, t, 0.04);
+    sessionRoomGain.gain.setTargetAtTime(live ? profile.room / 100 * 0.18 : 0, t, 0.04);
     const side = live ? profile.width / 100 * 0.42 : 0;
     leftDirect.gain.setTargetAtTime(1 + side, t, 0.04);
     rightDirect.gain.setTargetAtTime(1 + side, t, 0.04);
