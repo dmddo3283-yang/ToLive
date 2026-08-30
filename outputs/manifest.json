@@ -1,0 +1,22 @@
+{
+  "manifest_version": 3,
+  "name": "Live Mood for YouTube",
+  "version": "0.1.0",
+  "description": "유튜브의 모든 음악을 은은한 라이브 공연장 분위기로 듣습니다.",
+  "permissions": ["storage"],
+  "host_permissions": ["https://www.youtube.com/*", "https://music.youtube.com/*"],
+  "background": { "service_worker": "background.js" },
+  "commands": {
+    "toggle-live": {
+      "suggested_key": { "default": "Ctrl+Shift+L", "mac": "Command+Shift+L" },
+      "description": "Live Mood 켜기/끄기"
+    }
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://www.youtube.com/*", "https://music.youtube.com/*"],
+      "js": ["content.js"],
+      "run_at": "document_start"
+    }
+  ]
+}
