@@ -1,6 +1,6 @@
-# Live Mood for YouTube
+# ToLive
 
-유튜브의 `<video>` 요소를 Web Audio API에 연결해, 음원 자체를 바꾸지 않고 브라우저 재생 단계에서 라이브 공연장 느낌을 더하는 Manifest V3 확장 프로그램 MVP입니다. 별도 팝업 UI 없이 단축키로 작동합니다.
+유튜브의 `<video>` 요소를 Web Audio API에 연결해, 음원 자체를 바꾸지 않고 브라우저 재생 단계에서 라이브 공연장 느낌을 더하는 확장 프로그램입니다.
 
 ## 설치
 
